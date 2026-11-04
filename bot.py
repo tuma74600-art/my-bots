@@ -8,20 +8,18 @@ from telebot import types
 
 # ================= НАСТРОЙКИ =================
 BOT_TOKEN = "9011759800:AAHDc5BkcZ1j6hNVJ-kSTVdm-xNd328I-n8" 
-ADMIN_ID = 7969267809           # Твой главный ID
-ADMIN_PASSWORD = "YUHERGRAM_ADMIN_CODE_MYSOR"    # Твой пароль (замени, если нужно)
+ADMIN_ID = 7969267809 # Твой ID
+ADMIN_PASSWORD = "admin123"    
 # ============================================
 
-# --- ПОДКЛЮЧЕНИЕ ЧЕРЕЗ CLOUDFLARE (ОБХОД БЛОКИРОВОК) ---
-telebot.apihelper.API_URL = "https://hyrepgram.tuma74600.workers.dev/bot{0}/{1}"
+# --- ПОДКЛЮЧЕНИЕ ЧЕРЕЗ CLOUDFLARE (если надо, раскомментируй) ---
+# telebot.apihelper.API_URL = "https://hyrepgram.tuma74600.workers.dev/bot{0}/{1}"
 
 bot = telebot.TeleBot(BOT_TOKEN)
-user_last_action = {}
 
-# База данных
 conn = sqlite3.connect('bot.db', check_same_thread=False)
 cursor = conn.cursor()
-db_lock = threading.Lock() # Защита базы от одновременных запросов
+db_lock = threading.Lock()
 
 cursor.execute('''CREATE TABLE IF NOT EXISTS users (
     user_id INTEGER PRIMARY KEY, username TEXT, balance INTEGER DEFAULT 100,
@@ -29,18 +27,17 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS users (
     last_bonus INTEGER DEFAULT 0, is_vip INTEGER DEFAULT 0, last_vip_bonus INTEGER DEFAULT 0,
     custom_nickname TEXT DEFAULT NULL
 )''')
-
 try: cursor.execute("ALTER TABLE users ADD COLUMN is_vip INTEGER DEFAULT 0")
-except sqlite3.OperationalError: pass
+except: pass
 try: cursor.execute("ALTER TABLE users ADD COLUMN last_vip_bonus INTEGER DEFAULT 0")
-except sqlite3.OperationalError: pass
+except: pass
 try: cursor.execute("ALTER TABLE users ADD COLUMN custom_nickname TEXT DEFAULT NULL")
-except sqlite3.OperationalError: pass
-
+except: pass
 cursor.execute('''CREATE TABLE IF NOT EXISTS admins (user_id INTEGER PRIMARY KEY)''')
 conn.commit()
 
-# ================= ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =================
+user_last_action = {}
+
 def is_admin(user_id):
     if user_id == ADMIN_ID: return True
     with db_lock:
@@ -81,22 +78,13 @@ def find_target(text):
         return None, text
 
 def check_cancel(message):
-    menu_buttons = ['🚀 Старт', '👤 Профиль', '✏️ Сменить ник', '🏆 Топ богачей', '🎲 Играть', '🛒 Магазин', 
-                    '🎁 Бонус', '👑 VIP Меню', '❓ Помощь', '⚙️ Админ-панель', '🔙 Назад в меню', 
-                    '🚫 Забанить', '✅ Разбанить', '🛑 Админ-бан', '🔄 Админ-разбан', 
-                    '⭐ Выдать звезды', '🌿 Выдать граммы', '🎁 Выдать НФТ', '✏️ Выдать ник', '⭐ VIP Бонус']
-    if message.text in menu_buttons or message.text.startswith('/'):
-        return True
+    menu_buttons = ['🚀 Старт', '👤 Профиль', '✏️ Сменить ник', '🏆 Топ богачей', '🎲 Играть', '🛒 Магазин', '🎁 Бонус', '👑 VIP Меню', '❓ Помощь', '⚙️ Админ-панель', '🔙 Назад в меню', '🚫 Забанить', '✅ Разбанить', '🛑 Админ-бан', '🔄 Админ-разбан', '⭐ Выдать звезды', '🌿 Выдать граммы', '🎁 Выдать НФТ', '✏️ Выдать ник', '⭐ VIP Бонус']
+    if message.text in menu_buttons or message.text.startswith('/'): return True
     return False
 
-# ================= КЛАВИАТУРЫ =================
 def get_user_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(types.KeyboardButton('🚀 Старт'), types.KeyboardButton('👤 Профиль'), 
-               types.KeyboardButton('✏️ Сменить ник'), types.KeyboardButton('🏆 Топ богачей'), 
-               types.KeyboardButton('🎲 Играть'), types.KeyboardButton('🛒 Магазин'), 
-               types.KeyboardButton('🎁 Бонус'), types.KeyboardButton('👑 VIP Меню'),
-               types.KeyboardButton('❓ Помощь'), types.KeyboardButton('⚙️ Админ-панель'))
+    markup.add(types.KeyboardButton('🚀 Старт'), types.KeyboardButton('👤 Профиль'), types.KeyboardButton('✏️ Сменить ник'), types.KeyboardButton('🏆 Топ богачей'), types.KeyboardButton('🎲 Играть'), types.KeyboardButton('🛒 Магазин'), types.KeyboardButton('🎁 Бонус'), types.KeyboardButton('👑 VIP Меню'), types.KeyboardButton('❓ Помощь'), types.KeyboardButton('⚙️ Админ-панель'))
     return markup
 
 def get_vip_menu():
@@ -106,14 +94,9 @@ def get_vip_menu():
 
 def get_admin_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(types.KeyboardButton('🚫 Забанить'), types.KeyboardButton('✅ Разбанить'),
-               types.KeyboardButton('🛑 Админ-бан'), types.KeyboardButton('🔄 Админ-разбан'),
-               types.KeyboardButton('⭐ Выдать звезды'), types.KeyboardButton('🌿 Выдать граммы'), 
-               types.KeyboardButton('🎁 Выдать НФТ'), types.KeyboardButton('✏️ Выдать ник'),
-               types.KeyboardButton('🔙 Назад в меню'))
+    markup.add(types.KeyboardButton('🚫 Забанить'), types.KeyboardButton('✅ Разбанить'), types.KeyboardButton('🛑 Админ-бан'), types.KeyboardButton('🔄 Админ-разбан'), types.KeyboardButton('⭐ Выдать звезды'), types.KeyboardButton('🌿 Выдать граммы'), types.KeyboardButton('🎁 Выдать НФТ'), types.KeyboardButton('✏️ Выдать ник'), types.KeyboardButton('🔙 Назад в меню'))
     return markup
 
-# ================= КОМАНДЫ =================
 @bot.message_handler(commands=['start'])
 @bot.message_handler(func=lambda message: message.text == '🚀 Старт')
 def start(message):
@@ -124,13 +107,9 @@ def start(message):
         conn.commit()
         cursor.execute("SELECT COUNT(*) FROM users")
         total_users = cursor.fetchone()[0]
-    
     msg = bot.send_message(message.chat.id, f"👋 Привет! Добро пожаловать в Hypergram.\n\n👥 Нас уже: **{total_users}** человек!", parse_mode="Markdown", reply_markup=get_user_menu())
-    
-    try:
-        bot.pin_chat_message(message.chat.id, msg.message_id, disable_notification=True)
-    except Exception:
-        pass
+    try: bot.pin_chat_message(message.chat.id, msg.message_id, disable_notification=True)
+    except: pass
 
 @bot.message_handler(func=lambda message: message.text == '❓ Помощь')
 def help_menu(message):
@@ -159,13 +138,8 @@ def change_nick(message):
 def process_my_nick(message):
     if check_cancel(message): return bot.send_message(message.chat.id, "❌ Отмена.", reply_markup=get_user_menu())
     new_nick = message.text.strip()
-    
-    if len(new_nick) > 15:
-        return bot.send_message(message.chat.id, "❌ Ник слишком длинный (макс. 15).", reply_markup=get_user_menu())
-    
-    if re.search('[а-яА-ЯёЁ]', new_nick):
-        return bot.send_message(message.chat.id, "❌ Ошибка: Ник должен состоять только из английских букв!", reply_markup=get_user_menu())
-        
+    if len(new_nick) > 15: return bot.send_message(message.chat.id, "❌ Ник слишком длинный (макс. 15).", reply_markup=get_user_menu())
+    if re.search('[а-яА-ЯёЁ]', new_nick): return bot.send_message(message.chat.id, "❌ Ошибка: Ник должен состоять только из английских букв!", reply_markup=get_user_menu())
     with db_lock:
         cursor.execute("UPDATE users SET custom_nickname = ? WHERE user_id = ?", (new_nick, message.from_user.id))
         conn.commit()
@@ -192,10 +166,8 @@ def vip_menu(message):
     with db_lock:
         cursor.execute("SELECT is_vip FROM users WHERE user_id = ?", (message.from_user.id,))
         is_vip = cursor.fetchone()[0]
-    if is_vip:
-        bot.send_message(message.chat.id, "👑 **VIP-зона!**\n\nШанс победы: **65%**.\nБонус: **100 ⭐** в день.", reply_markup=get_vip_menu(), parse_mode="Markdown")
-    else:
-        bot.send_message(message.chat.id, "❌ У тебя нет VIP.\nКупи в магазине (`/buy vip`).", parse_mode="Markdown")
+    if is_vip: bot.send_message(message.chat.id, "👑 **VIP-зона!**\n\nШанс победы: **65%**.\nБонус: **100 ⭐** в день.", reply_markup=get_vip_menu(), parse_mode="Markdown")
+    else: bot.send_message(message.chat.id, "❌ У тебя нет VIP.\nКупи в магазине (`/buy vip`).", parse_mode="Markdown")
 
 @bot.message_handler(commands=['vipbonus'])
 @bot.message_handler(func=lambda message: message.text == '⭐ VIP Бонус')
@@ -242,7 +214,6 @@ def buy_item(message):
     with db_lock:
         cursor.execute("SELECT stars, is_vip FROM users WHERE user_id = ?", (message.from_user.id,))
         ud = cursor.fetchone()
-    
     if item == 'vip' and ud[1] == 0 and ud[0] >= 5000:
         with db_lock:
             cursor.execute("UPDATE users SET stars = stars - 5000, is_vip = 1 WHERE user_id = ?", (message.from_user.id,))
@@ -267,15 +238,12 @@ def buy_item(message):
                 conn.commit()
             bot.send_message(message.chat.id, "🎁 Ты нашел **Редкий НФТ**!", parse_mode="Markdown")
 
-# --- ИГРА ---
 @bot.message_handler(commands=['game'])
 @bot.message_handler(func=lambda message: message.text == '🎲 Играть')
 def game_info(message):
     if check_banned(message) or is_flooding(message.from_user.id): return
     markup = types.InlineKeyboardMarkup(row_width=3)
-    markup.add(types.InlineKeyboardButton('10', callback_data='bet_10'), types.InlineKeyboardButton('50', callback_data='bet_50'),
-               types.InlineKeyboardButton('100', callback_data='bet_100'), types.InlineKeyboardButton('500', callback_data='bet_500'),
-               types.InlineKeyboardButton('🔥 Ва-банк', callback_data='bet_all'))
+    markup.add(types.InlineKeyboardButton('10', callback_data='bet_10'), types.InlineKeyboardButton('50', callback_data='bet_50'), types.InlineKeyboardButton('100', callback_data='bet_100'), types.InlineKeyboardButton('500', callback_data='bet_500'), types.InlineKeyboardButton('🔥 Ва-банк', callback_data='bet_all'))
     bot.send_message(message.chat.id, "🎲 **Выбери ставку:**", reply_markup=markup, parse_mode="Markdown")
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('bet_'))
@@ -288,7 +256,6 @@ def game_callback(call):
     balance, is_vip = ud[0], ud[1]
     bet = balance if call.data == 'bet_all' else int(call.data.split('_')[1])
     if bet <= 0 or balance < bet: return bot.answer_callback_query(call.id, "❌ Мало монет!", show_alert=True)
-    
     win_chance = 0.65 if is_vip else 0.50
     with db_lock:
         if random.random() < win_chance:
@@ -301,39 +268,30 @@ def game_callback(call):
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f"🎲 {res}", parse_mode="Markdown")
     bot.answer_callback_query(call.id, "Готово!")
 
-# ================= АДМИНКА =================
 @bot.message_handler(commands=['admin'])
 @bot.message_handler(func=lambda message: message.text == '⚙️ Админ-панель')
 def handle_admin(message):
     if check_banned(message): return
-    
     if message.text in ['⚙️ Админ-панель', '/admin']:
         if is_admin(message.from_user.id): 
             with db_lock:
                 cursor.execute("SELECT COUNT(*) FROM users")
                 total_users = cursor.fetchone()[0]
             bot.send_message(message.chat.id, f"⚙️ Меню:\n👥 Всего пользователей: {total_users}", reply_markup=get_admin_menu())
-        else: 
-            bot.send_message(message.chat.id, "🔑 Введи: `/admin пароль`", parse_mode="Markdown")
+        else: bot.send_message(message.chat.id, "🔑 Введи: `/admin пароль`", parse_mode="Markdown")
         return
-        
     args = message.text.split()
-    if len(args) > 1:
-        if args[1] == ADMIN_PASSWORD:
-            with db_lock:
-                cursor.execute("INSERT OR IGNORE INTO admins (user_id) VALUES (?)", (message.from_user.id,))
-                conn.commit()
-            bot.send_message(message.chat.id, "✅ Доступ разрешен.", reply_markup=get_admin_menu())
-        else:
-            # НОВАЯ СТРОКА: Ошибка при неверном пароле
-            bot.send_message(message.chat.id, "❌ Неверный пароль! Попробуй еще раз.")
+    if len(args) > 1 and args[1] == ADMIN_PASSWORD:
+        with db_lock:
+            cursor.execute("INSERT OR IGNORE INTO admins (user_id) VALUES (?)", (message.from_user.id,))
+            conn.commit()
+        bot.send_message(message.chat.id, "✅ Доступ разрешен.", reply_markup=get_admin_menu())
 
 @bot.message_handler(func=lambda message: message.text == '🔙 Назад в меню')
 def back_to_menu(message):
     if check_banned(message): return
     bot.send_message(message.chat.id, "Главное меню:", reply_markup=get_user_menu())
 
-# --- ТРИГГЕРЫ ---
 @bot.message_handler(func=lambda message: message.text in ['🚫 Забанить', '✅ Разбанить', '🛑 Админ-бан', '🔄 Админ-разбан', '⭐ Выдать звезды', '🌿 Выдать граммы', '🎁 Выдать НФТ', '✏️ Выдать ник'])
 def admin_buttons(message):
     if not is_admin(message.from_user.id): return
@@ -351,13 +309,11 @@ def admin_buttons(message):
     msg = bot.send_message(message.chat.id, text, parse_mode="Markdown")
     bot.register_next_step_handler(msg, next_func)
 
-# --- ОБРАБОТЧИКИ ВВОДА ---
 def process_ban(message):
     if check_cancel(message): return bot.send_message(message.chat.id, "❌ Отмена.", reply_markup=get_admin_menu())
     target_id, display = find_target(message.text)
     if target_id == "self": target_id = message.from_user.id
-    if not target_id:
-        return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
+    if not target_id: return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
     if target_id == ADMIN_ID: return bot.send_message(message.chat.id, "❌ Создателя нельзя банить!", reply_markup=get_admin_menu())
     with db_lock:
         cursor.execute("UPDATE users SET is_banned = 1 WHERE user_id = ?", (target_id,))
@@ -368,8 +324,7 @@ def process_unban(message):
     if check_cancel(message): return bot.send_message(message.chat.id, "❌ Отмена.", reply_markup=get_admin_menu())
     target_id, display = find_target(message.text)
     if target_id == "self": target_id = message.from_user.id
-    if not target_id:
-        return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
+    if not target_id: return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
     with db_lock:
         cursor.execute("UPDATE users SET is_banned = 0 WHERE user_id = ?", (target_id,))
         conn.commit()
@@ -379,8 +334,7 @@ def process_aban(message):
     if check_cancel(message): return bot.send_message(message.chat.id, "❌ Отмена.", reply_markup=get_admin_menu())
     target_id, display = find_target(message.text)
     if target_id == "self": target_id = message.from_user.id
-    if not target_id:
-        return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
+    if not target_id: return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
     if target_id == ADMIN_ID: return bot.send_message(message.chat.id, "❌ Создателя нельзя банить!", reply_markup=get_admin_menu())
     with db_lock:
         cursor.execute("UPDATE users SET is_banned = 1 WHERE user_id = ?", (target_id,))
@@ -391,8 +345,7 @@ def process_aunban(message):
     if check_cancel(message): return bot.send_message(message.chat.id, "❌ Отмена.", reply_markup=get_admin_menu())
     target_id, display = find_target(message.text)
     if target_id == "self": target_id = message.from_user.id
-    if not target_id:
-        return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
+    if not target_id: return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
     with db_lock:
         cursor.execute("UPDATE users SET is_banned = 0 WHERE user_id = ?", (target_id,))
         conn.commit()
@@ -404,8 +357,7 @@ def process_stars(message):
     if len(args) < 2: return bot.send_message(message.chat.id, "❌ Отмена (неверный формат).", reply_markup=get_admin_menu())
     target_id, display = find_target(args[0])
     if target_id == "self": target_id = message.from_user.id
-    if not target_id:
-        return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
+    if not target_id: return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
     try: amount = int(args[1])
     except: return bot.send_message(message.chat.id, "❌ Отмена (нужна сумма).", reply_markup=get_admin_menu())
     if amount > 10000: return bot.send_message(message.chat.id, "❌ Максимум 10000 за раз!", reply_markup=get_admin_menu())
@@ -420,8 +372,7 @@ def process_grams(message):
     if len(args) < 2: return bot.send_message(message.chat.id, "❌ Отмена (неверный формат).", reply_markup=get_admin_menu())
     target_id, display = find_target(args[0])
     if target_id == "self": target_id = message.from_user.id
-    if not target_id:
-        return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
+    if not target_id: return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
     try: amount = int(args[1])
     except: return bot.send_message(message.chat.id, "❌ Отмена (нужна сумма).", reply_markup=get_admin_menu())
     with db_lock:
@@ -435,9 +386,7 @@ def process_nft(message):
     if len(args) < 2: return bot.send_message(message.chat.id, "❌ Отмена (неверный формат).", reply_markup=get_admin_menu())
     target_id, display = find_target(args[0])
     if target_id == "self": target_id = message.from_user.id
-    if not target_id:
-        return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
-    
+    if not target_id: return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
     item_name = args[1]
     with db_lock:
         cursor.execute("SELECT inventory FROM users WHERE user_id = ?", (target_id,))
@@ -453,27 +402,13 @@ def process_admin_nick(message):
     if len(args) < 2: return bot.send_message(message.chat.id, "❌ Отмена (неверный формат).", reply_markup=get_admin_menu())
     target_id, display = find_target(args[0])
     if target_id == "self": target_id = message.from_user.id
-    if not target_id:
-        return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
-    
+    if not target_id: return bot.send_message(message.chat.id, "❌ Отмена (ошибка ввода).", reply_markup=get_admin_menu())
     new_nick = args[1].strip()
     if len(new_nick) > 15: return bot.send_message(message.chat.id, "❌ Ник слишком длинный (макс. 15).", reply_markup=get_admin_menu())
-    
-    if re.search('[а-яА-ЯёЁ]', new_nick):
-        return bot.send_message(message.chat.id, "❌ Ошибка: Ник должен быть на английском!", reply_markup=get_admin_menu())
-        
+    if re.search('[а-яА-ЯёЁ]', new_nick): return bot.send_message(message.chat.id, "❌ Ошибка: Ник должен быть на английском!", reply_markup=get_admin_menu())
     with db_lock:
         cursor.execute("UPDATE users SET custom_nickname = ? WHERE user_id = ?", (new_nick, target_id))
         conn.commit()
     bot.send_message(message.chat.id, f"📛 {display} выдан новый ник: **{new_nick}**", parse_mode="Markdown", reply_markup=get_admin_menu())
 
-# ================= ЗАПУСК =================
-print("Hypergram Бот запущен...")
-
-while True:
-    try:
-        bot.polling(non_stop=True, interval=0, timeout=15, long_polling_timeout=10)
-    except Exception as e:
-        print(f"⚠️ Ошибка сети: {e}")
-        print("🔄 Переподключение через 5 секунд...")
-        time.sleep(5)
+# ВНИМАНИЕ: Ниже нет bot.polling(), так как мы запускаем его через app.py!
