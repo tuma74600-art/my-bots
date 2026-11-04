@@ -1,0 +1,208 @@
+import random
+import sqlite3
+
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
+)
+
+TOKEN = "9265394181:AAGpFitKBeUq7q9Il6mkBPY1XofyKFySw1g"
+ADMIN_ID = 7969267809
+ADMIN_CODE = "HYPER-GRAM-ADMIN"
+
+db = sqlite3.connect("bot.db", check_same_thread=False)
+
+db.execute(
+    """
+    CREATE TABLE IF NOT EXISTS users (
+        user_id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        coins INTEGER DEFAULT 1000,
+        stars INTEGER DEFAULT 0
+    )
+    """
+)
+
+db.commit()
+
+waiting_for_code = set()
+
+
+def add_user(user):
+    db.execute(
+        "INSERT OR IGNORE INTO users (user_id, name) VALUES (?, ?)",
+        (user.id, user.first_name or "Игрок"),
+    )
+    db.commit()
+
+
+def get_menu():
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("🎰 Казино", callback_data="casino"),
+                InlineKeyboardButton("🏆 Топ", callback_data="top"),
+            ],
+            [
+                InlineKeyboardButton("💰 Баланс", callback_data="balance"),
+                InlineKeyboardButton("⭐ Звёзды", callback_data="stars"),
+            ],
+            [
+                InlineKeyboardButton("🛠 Админка", callback_data="admin"),
+            ],
+        ]
+    )
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    add_user(user)
+
+    await update.message.reply_text(
+        "Привет! Выбирай действие:",
+        reply_markup=get_menu(),
+    )
+
+
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    user = query.from_user
+    add_user(user)
+
+    if query.data == "balance":
+        coins = db.execute(
+            "SELECT coins FROM users WHERE user_id = ?",
+            (user.id,),
+        ).fetchone()[0]
+
+        await query.message.reply_text(
+            f"💰 Баланс: {coins} монет",
+            reply_markup=get_menu(),
+        )
+
+    elif query.data == "stars":
+        stars = db.execute(
+            "SELECT stars FROM users WHERE user_id = ?",
+            (user.id,),
+        ).fetchone()[0]
+
+        await query.message.reply_text(
+            f"⭐ Звёзды: {stars}",
+            reply_markup=get_menu(),
+        )
+
+    elif query.data == "casino":
+        coins = db.execute(
+            "SELECT coins FROM users WHERE user_id = ?",
+            (user.id,),
+        ).fetchone()[0]
+
+        if coins < 100:
+            await query.message.reply_text(
+                "Недостаточно монет. Для игры нужно 100 монет.",
+                reply_markup=get_menu(),
+            )
+            return
+
+        numbers = [random.randint(1, 9) for _ in range(3)]
+
+        if numbers[0] == numbers[1] == numbers[2]:
+            prize = 1000
+            result_text = "🎉 Джекпот! Ты выиграл 1000 монет!"
+        elif len(set(numbers)) == 2:
+            prize = 250
+            result_text = "🎉 Два одинаковых числа! Ты выиграл 250 монет!"
+        else:
+            prize = 0
+            result_text = "😔 Не повезло. Попробуй ещё раз."
+
+        new_balance = coins - 100 + prize
+
+        db.execute(
+            "UPDATE users SET coins = ? WHERE user_id = ?",
+            (new_balance, user.id),
+        )
+        db.commit()
+
+        await query.message.reply_text(
+            f"🎰 Результат: {' | '.join(map(str, numbers))}\n\n"
+            f"{result_text}\n"
+            f"💰 Баланс: {new_balance} монет",
+            reply_markup=get_menu(),
+        )
+
+    elif query.data == "top":
+        users = db.execute(
+            """
+            SELECT name, coins
+            FROM users
+            ORDER BY coins DESC
+            LIMIT 10
+            """
+        ).fetchall()
+
+        text = "🏆 Топ богачей:\n\n"
+
+        for position, row in enumerate(users, 1):
+            text += f"{position}. {row[0]} — {row[1]} монет\n"
+
+        await query.message.reply_text(
+            text,
+            reply_markup=get_menu(),
+        )
+
+    elif query.data == "admin":
+    if user .id not in waiting_for_code:
+!= ADMIN_ID:
+            await query.message.reply_text(
+                "⛔ Доступ запрещён.",
+                reply_markup=get_menu(),
+            )
+            return
+
+        waiting_for_code.add(user.id)
+
+        await query.message.reply_text(
+            "Введи админ-код обычным сообщением:"
+        )
+
+
+async def check_admin_code(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    user = update.effective_user
+
+    if user.id not in waiting_for_code:
+        return
+
+    waiting_for_code.remove(user.id)
+
+    entered_code = update.message.text.strip()
+
+    if entered_code == ADMIN_CODE:
+        await update.message.reply_text(
+            "✅ Админ-код правильный.\n"
+            "Ты вошёл в админку."
+        )
+    else:
+        await update.message.reply_text(
+            "❌ Неправильный админ-код."
+        )
+
+
+def main():
+    if TOKEN == "9265394181:AAGpFitKBeUq7q9Il6mkBPY1XofyKFySw1g ":
+        print("Ошибка: вставь токен от BotFather в переменную TOKEN.")
+        return
+
+    app = Application.builder().token(TOKEN).build()
+
+

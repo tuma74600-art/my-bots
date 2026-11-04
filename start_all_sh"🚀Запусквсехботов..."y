@@ -1,0 +1,5 @@
+#!/bin/bash
+termux-wake-lock
+echo "🚀 Запуск всех ботов..."
+python bot.py &
+...

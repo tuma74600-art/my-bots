@@ -1,0 +1,9 @@
+pyTelegramBotAPI
+requests
+beautifulsoup4
+colorama
+user-agents
+phonenumbers
+dnspython
+python-whois
+maigret
